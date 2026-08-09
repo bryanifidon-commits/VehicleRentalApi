@@ -1,5 +1,7 @@
+using Domain.Enums;
+
 namespace Application.DTOs.RequestDtos;
 
 public record UpdateVehicleStatusRequest(
-	bool IsActive
+    VehicleStatus Status
 );

@@ -6,13 +6,14 @@ using Domain.Entities;
 
 namespace Application.Interfaces
 {
-    public interface IReservationRepository
+    public interface IBookingRepository
     {
  Task<Booking?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
     Task<IEnumerable<Booking>> GetActiveBookingsForVehicleAsync(Guid vehicleId, CancellationToken cancellationToken = default);
     
     // Customer operation
-    Task<IEnumerable<Booking>> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken = default);
+    Task<IEnumerable<Booking>> GetByCustomerIdAsync(Guid customerId, CancellationToken cancellationToken = default);
+    Task<IEnumerable<Booking>> GetByVehicleIdAsync(Guid vehicleId, CancellationToken cancellationToken = default);
     
     // Admin operation
     Task<IEnumerable<Booking>> GetAllAsync(CancellationToken cancellationToken = default);
