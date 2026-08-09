@@ -23,7 +23,7 @@ namespace Domain.Entities
     public BookingStatus Status { get; set; } = BookingStatus.PendingPayment;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-    // Navigation Properties for EF Core
+
     public Vehicle Vehicle { get; set; } = null!;
     public User Customer { get; set; } = null!;
     public ICollection<Booking> Bookings { get; set; } = new List<Booking>();
