@@ -1,3 +1,5 @@
+using System.Net;
+
 namespace Application.DTOs.RequestDtos;
 
 public record CreateVehicleRequest(

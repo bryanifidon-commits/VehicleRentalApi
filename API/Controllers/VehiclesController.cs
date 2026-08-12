@@ -1,59 +1,90 @@
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using Application.Services.Interfaces;
+using Application.DTOs.Request;
 using Application.DTOs.RequestDtos;
+using Application.DTOs.Response;
+using Application.Services.Interfaces;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 
-namespace VehicleRentalApi.API.Controllers
+namespace API.Controllers;
+
+[ApiController]
+[Route("api/[controller]")]
+[Produces("application/json")]
+public class VehiclesController : ControllerBase
 {
-    [Authorize]
-    [ApiController]
-    [Route("api/[controller]")]
-    public class VehiclesController : ControllerBase
+    private readonly IVehicleServices _vehicleService;
+
+    public VehiclesController(IVehicleServices vehicleService)
     {
-        private readonly IVehicleService _vehicleService;
+        _vehicleService = vehicleService;
+    }
 
-        public VehiclesController(IVehicleService vehicleService)
-        {
-            _vehicleService = vehicleService;
-        }
+    [HttpGet]
+    [ProducesResponseType(typeof(IEnumerable<VehicleResponse>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetAllVehicles(CancellationToken cancellationToken)
+    {
+        var response = await _vehicleService.GetAllVehiclesAsync(cancellationToken);
+        return Ok(response);
+    }
 
-        [AllowAnonymous]
-        [HttpGet]
-        public async Task<IActionResult> GetAvailableVehicles(CancellationToken cancellationToken)
-        {
-            var response = await _vehicleService.GetAvailableVehiclesAsync(cancellationToken);
-            return Ok(response);
-        }
+    [HttpGet("{id:guid}")]
+    [ProducesResponseType(typeof(VehicleResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetVehicleById(Guid id, CancellationToken cancellationToken)
+    {
+        var response = await _vehicleService.GetVehicleByIdAsync(id, cancellationToken);
+        if (response == null)
+            return NotFound(new { message = $"Vehicle with ID '{id}' was not found." });
 
-        [AllowAnonymous]
-        [HttpGet("{id:guid}")]
-        public async Task<IActionResult> GetVehicleById(Guid id, CancellationToken cancellationToken)
-        {
-            var response = await _vehicleService.GetVehicleByIdAsync(id, cancellationToken);
+        return Ok(response);
+    }
 
-            if (response == null)
-            {
-                return NotFound(new { message = $"Vehicle with ID '{id}' was not found." });
-            }
 
-            return Ok(response);
-        }
-
-        //[Authorize(Policy = "AdminOnly")]
-        [HttpPost]
-        [AllowAnonymous]
-        public async Task<IActionResult> CreateVehicle([FromBody] CreateVehicleRequest request, CancellationToken cancellationToken)
+    [HttpPost]
+    [ProducesResponseType(typeof(VehicleResponse), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> CreateVehicle([FromBody] CreateVehicleRequest request, CancellationToken cancellationToken)
+    {
+        try
         {
             var response = await _vehicleService.CreateVehicleAsync(request, cancellationToken);
+            return CreatedAtAction(nameof(GetVehicleById), new { id = response.Id }, response);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpPut("{id:guid}")]
+    [ProducesResponseType(typeof(VehicleResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateVehicle(Guid id, [FromBody] UpdateVehicleRequest request, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var response = await _vehicleService.UpdateVehicleAsync(id, request, cancellationToken);
+            if (response == null)
+                return NotFound(new { message = $"Vehicle with ID '{id}' was not found." });
+
             return Ok(response);
         }
-
-        //[Authorize(Policy = "AdminOnly")]
-        [HttpPatch("{id:guid}/status")]
-        public async Task<IActionResult> UpdateVehicleStatus(Guid id, [FromBody] UpdateVehicleStatusRequest request, CancellationToken cancellationToken)
+        catch (InvalidOperationException ex)
         {
-            await _vehicleService.UpdateVehicleStatusAsync(id, request, cancellationToken);
-            return NoContent();
+            return BadRequest(new { message = ex.Message });
         }
+    }
+
+    [HttpDelete("{id:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DeleteVehicle(Guid id, CancellationToken cancellationToken)
+    {
+        var success = await _vehicleService.DeleteVehicleAsync(id, cancellationToken);
+        if (!success)
+            return NotFound(new { message = $"Vehicle with ID '{id}' was not found." });
+
+        return NoContent();
     }
 }

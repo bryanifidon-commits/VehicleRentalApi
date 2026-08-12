@@ -1,16 +1,18 @@
 using Application.Interfaces;
+using Application.Repositories;
 using Application.Services.Implementations;
 using Application.Services.Interfaces;
+using FluentValidation;
 using Infrastructure.Repos;
-
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Controllers & Swagger
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// CORS setup for frontend developers
+// CORS
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
@@ -21,23 +23,27 @@ builder.Services.AddCors(options =>
     });
 });
 
-// Dependency Injection - Repositories
-builder.Services.AddScoped<IVehicleRepository, InMemoryVehicleRepository>();
-builder.Services.AddScoped<IBookingRepository, BookingRepository>(); // Update class name if using InMemoryBookingRepository
-builder.Services.AddScoped<IUserRepository, UserRepository>();       // Update class name if using InMemoryUserRepository
+// FluentValidation
+builder.Services.AddValidatorsFromAssemblyContaining<VehicleServices>();
 
-// Dependency Injection - Application Services
-builder.Services.AddScoped<IVehicleService, VehicleService>();
+// Repositories
+builder.Services.AddSingleton<IVehicleRepository, InMemoryVehicleRepository>();
+builder.Services.AddSingleton<IBookingRepository, BookingRepository>();
+
+// Application Services
+builder.Services.AddScoped<IVehicleServices, VehicleServices>();
 builder.Services.AddScoped<IBookingService, BookingService>();
-//builder.Services.AddScoped<IUserService, UserService>();
 
 var app = builder.Build();
 
-// Enable Swagger in all environments for testing
-app.UseSwagger();
-app.UseSwaggerUI();
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
 
 app.UseCors("AllowAll");
+app.UseHttpsRedirection();
 app.UseAuthorization();
 app.MapControllers();
 

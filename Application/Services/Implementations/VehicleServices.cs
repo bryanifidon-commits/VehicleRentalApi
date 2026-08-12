@@ -1,30 +1,32 @@
 using Application.DTOs;
+using Application.DTOs.Request;
 using Application.DTOs.RequestDtos;
-using Application.Interfaces; // or Application.Repositories depending on where IVehicleRepository is located
-using Application.Request;
+using Application.DTOs.Response;
+using Application.Repositories;
 using Application.Services.Interfaces;
 using Domain.Entities;
+using Domain.Enums;
 
 namespace Application.Services.Implementations;
 
-public class VehicleService : IVehicleService
+public class VehicleServices : IVehicleServices
 {
     private readonly IVehicleRepository _vehicleRepository;
 
-    public VehicleService(IVehicleRepository vehicleRepository)
+    public VehicleServices(IVehicleRepository vehicleRepository)
     {
         _vehicleRepository = vehicleRepository;
     }
 
-    public async Task<IEnumerable<VehicleDTO>> GetAvailableVehiclesAsync(CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<VehicleDTO>> GetAllVehiclesAsync(CancellationToken cancellationToken = default)
     {
-        var vehicles = await _vehicleRepository.GetAllAvailableAsync(cancellationToken);
+        var vehicles = await _vehicleRepository.GetAllAsync(cancellationToken);
         return vehicles.Select(MapToDTO);
     }
 
-    public async Task<IEnumerable<VehicleDTO>> SearchVehiclesAsync(VehicleSearchRequest request, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<VehicleDTO>> GetAvailableVehiclesAsync(CancellationToken cancellationToken = default)
     {
-        var vehicles = await _vehicleRepository.SearchAsync(request, cancellationToken);
+        var vehicles = await _vehicleRepository.GetAvailableAsync(cancellationToken);
         return vehicles.Select(MapToDTO);
     }
 
@@ -45,6 +47,7 @@ public class VehicleService : IVehicleService
             RegistrationNumber = request.RegistrationNumber,
             Location = request.Location,
             PricePerDay = request.PricePerDay,
+            Status = VehicleStatus.Active,
             ImageUrl = request.ImageUrl
         };
 
@@ -52,14 +55,43 @@ public class VehicleService : IVehicleService
         return MapToDTO(vehicle);
     }
 
-    public async Task UpdateVehicleStatusAsync(Guid vehicleId, UpdateVehicleStatusRequest request, CancellationToken cancellationToken = default)
+    public async Task<VehicleDTO?> UpdateVehicleAsync(Guid id, UpdateVehicleRequest request, CancellationToken cancellationToken = default)
     {
-        var vehicle = await _vehicleRepository.GetByIdAsync(vehicleId, cancellationToken);
+        var vehicle = await _vehicleRepository.GetByIdAsync(id, cancellationToken);
         if (vehicle == null)
-            throw new InvalidOperationException($"Vehicle with ID '{vehicleId}' was not found.");
+            return null;
+
+        vehicle.Make = request.Make;
+        vehicle.Model = request.Model;
+        vehicle.Type = request.Type;
+        vehicle.RegistrationNumber = request.RegistrationNumber;
+        vehicle.Location = request.Location;
+        vehicle.PricePerDay = request.PricePerDay;
+        vehicle.ImageUrl = request.ImageUrl;
+
+        await _vehicleRepository.UpdateAsync(vehicle, cancellationToken);
+        return MapToDTO(vehicle);
+    }
+
+    public async Task<bool> UpdateVehicleStatusAsync(Guid id, UpdateVehicleStatusRequest request, CancellationToken cancellationToken = default)
+    {
+        var vehicle = await _vehicleRepository.GetByIdAsync(id, cancellationToken);
+        if (vehicle == null)
+            return false;
 
         vehicle.Status = request.Status;
         await _vehicleRepository.UpdateAsync(vehicle, cancellationToken);
+        return true;
+    }
+
+    public async Task<bool> DeleteVehicleAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var vehicle = await _vehicleRepository.GetByIdAsync(id, cancellationToken);
+        if (vehicle == null)
+            return false;
+
+        await _vehicleRepository.DeleteAsync(id, cancellationToken);
+        return true;
     }
 
     private static VehicleDTO MapToDTO(Vehicle vehicle)

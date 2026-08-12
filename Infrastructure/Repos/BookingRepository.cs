@@ -6,7 +6,7 @@ namespace Infrastructure.Repos;
 
 public class BookingRepository : IBookingRepository
 {
-    private readonly List<Booking> _bookings = new();
+    private static readonly List<Booking> _bookings = new();
 
     public Task<Booking?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
