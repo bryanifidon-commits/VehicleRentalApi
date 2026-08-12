@@ -1,8 +1,8 @@
-namespace Application.DTOs.RequestDtos;
+namespace Application.DTOs.Request;
 
 public record CreateBookingRequest(
-    Guid UserId,
     Guid VehicleId,
+    Guid CustomerId,
     DateTime StartDate,
     DateTime EndDate
 );

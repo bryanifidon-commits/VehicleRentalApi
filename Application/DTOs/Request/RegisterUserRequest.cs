@@ -1,8 +1,8 @@
-namespace Application.DTOs.RequestDtos;
+namespace Application.DTOs.Request;
 
 public record RegisterUserRequest(
-    string FirstName,
-    string LastName,
+    string Name,
     string Email,
+    string Phone,
     string Password
 );

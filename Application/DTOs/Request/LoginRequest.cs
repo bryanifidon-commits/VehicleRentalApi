@@ -1,4 +1,4 @@
-namespace Application.DTOs.RequestDtos;
+namespace Application.DTOs.Request;
 
 public record LoginRequest(
     string Email,
