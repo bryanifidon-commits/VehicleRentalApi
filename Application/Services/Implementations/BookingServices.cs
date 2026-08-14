@@ -1,7 +1,6 @@
 using Application.DTOs.Request;
 using Application.DTOs.Response;
 using Application.Interfaces;
-using Application.Repositories;
 using Application.Services.Interfaces;
 using Domain.Entities;
 using Domain.Enums;

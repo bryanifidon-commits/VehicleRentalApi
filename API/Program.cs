@@ -1,10 +1,8 @@
 using Application.Interfaces;
-using Application.Repositories;
 using Application.Services.Implementations;
 using Application.Services.Interfaces;
 using FluentValidation;
 using Infrastructure.Data;
-using Infrastructure.Repos;
 using Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
 
@@ -34,9 +32,9 @@ builder.Services.AddCors(options =>
 // FluentValidation
 builder.Services.AddValidatorsFromAssemblyContaining<VehicleServices>();
 
-// Repositories
-builder.Services.AddSingleton<IVehicleRepository, InMemoryVehicleRepository>();
-builder.Services.AddSingleton<IBookingRepository, BookingRepository>();
+// Repositories (Changed from AddSingleton to AddScoped to match DbContext lifecycle)
+builder.Services.AddScoped<IVehicleRepository, VehicleRepository>();
+builder.Services.AddScoped<IBookingRepository, BookingRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 
 // Application Services

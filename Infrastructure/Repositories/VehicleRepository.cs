@@ -20,9 +20,7 @@ public class VehicleRepository : IVehicleRepository
         CancellationToken cancellationToken = default)
     {
         return await _context.Vehicles
-            .FirstOrDefaultAsync(
-                v => v.Id == id,
-                cancellationToken);
+            .FirstOrDefaultAsync(v => v.Id == id, cancellationToken);
     }
 
     public async Task<IEnumerable<Vehicle>> GetAllAsync(
@@ -33,7 +31,7 @@ public class VehicleRepository : IVehicleRepository
             .ToListAsync(cancellationToken);
     }
 
-    public async Task<IEnumerable<Vehicle>> GetAllAvailableAsync(
+    public async Task<IEnumerable<Vehicle>> GetAvailableAsync(
         CancellationToken cancellationToken = default)
     {
         return await _context.Vehicles
@@ -46,10 +44,7 @@ public class VehicleRepository : IVehicleRepository
         Vehicle vehicle,
         CancellationToken cancellationToken = default)
     {
-        await _context.Vehicles.AddAsync(
-            vehicle,
-            cancellationToken);
-
+        await _context.Vehicles.AddAsync(vehicle, cancellationToken);
         await _context.SaveChangesAsync(cancellationToken);
     }
 
@@ -58,7 +53,18 @@ public class VehicleRepository : IVehicleRepository
         CancellationToken cancellationToken = default)
     {
         _context.Vehicles.Update(vehicle);
-
         await _context.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task DeleteAsync(
+        Guid id,
+        CancellationToken cancellationToken = default)
+    {
+        var vehicle = await _context.Vehicles.FindAsync(new object[] { id }, cancellationToken);
+        if (vehicle != null)
+        {
+            _context.Vehicles.Remove(vehicle);
+            await _context.SaveChangesAsync(cancellationToken);
+        }
     }
 }

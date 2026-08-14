@@ -1,25 +1,30 @@
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
-WORKDIR /src
+# 1. Build Stage
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+WORKDIR /build_workspace
 
-# Copy project files matching your exact folder names
+# Copy project files for caching restore dependencies
 COPY ["API/API.csproj", "API/"]
 COPY ["Application/Application.csproj", "Application/"]
 COPY ["Domain/Domain.csproj", "Domain/"]
 COPY ["Infrastructure/Infrastructure.csproj", "Infrastructure/"]
 
+# Restore dependencies
 RUN dotnet restore "API/API.csproj"
 
-# Copy remaining source code and build
+# Copy remaining source files
 COPY . .
-WORKDIR "/src/API"
-RUN dotnet build "API.csproj" -c Release -o /app/build
 
-FROM build AS publish
+# Build and publish application
+WORKDIR "/build_workspace/API"
 RUN dotnet publish "API.csproj" -c Release -o /app/publish /p:UseAppHost=false
 
-FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS final
+# 2. Runtime Stage
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 WORKDIR /app
-EXPOSE 8080
+COPY --from=build /app/publish .
+
+# Expose Render default port
 ENV ASPNETCORE_URLS=http://+:8080
-COPY --from=publish /app/publish .
+EXPOSE 8080
+
 ENTRYPOINT ["dotnet", "API.dll"]

@@ -2,7 +2,7 @@ using Application.DTOs;
 using Application.DTOs.Request;
 using Application.DTOs.RequestDtos;
 using Application.DTOs.Response;
-using Application.Repositories;
+using Application.Interfaces;
 using Application.Services.Interfaces;
 using Domain.Entities;
 using Domain.Enums;

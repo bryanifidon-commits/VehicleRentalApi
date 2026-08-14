@@ -1,5 +1,5 @@
 using Application.DTOs;
-using Application.DTOs.RequestDtos;
+using Application.DTOs.Request;
 
 namespace Application.Services.Interfaces;
 
