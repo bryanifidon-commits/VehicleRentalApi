@@ -4,37 +4,20 @@ using System.Threading;
 using System.Threading.Tasks;
 using Domain.Entities;
 
-namespace Application.Interfaces
+namespace Application.Interfaces;
+
+public interface IBookingRepository
 {
-    public interface IBookingRepository
-    {
-        Task<Booking?> GetByIdAsync(
-            Guid id,
-            CancellationToken cancellationToken = default);
+    Task<Booking?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<IEnumerable<Booking>> GetActiveBookingsForVehicleAsync(Guid vehicleId, CancellationToken cancellationToken = default);
 
-        Task<IEnumerable<Booking>> GetActiveBookingsForVehicleAsync(
-            Guid vehicleId,
-            CancellationToken cancellationToken = default);
+    // Customer operations
+    Task<IEnumerable<Booking>> GetByCustomerIdAsync(Guid customerId, CancellationToken cancellationToken = default);
+    Task<IEnumerable<Booking>> GetByVehicleIdAsync(Guid vehicleId, CancellationToken cancellationToken = default);
 
-        // Customer operations
-        Task<IEnumerable<Booking>> GetByCustomerIdAsync(
-            Guid customerId,
-            CancellationToken cancellationToken = default);
+    // Admin operations
+    Task<IEnumerable<Booking>> GetAllAsync(CancellationToken cancellationToken = default);
 
-        Task<IEnumerable<Booking>> GetByVehicleIdAsync(
-            Guid vehicleId,
-            CancellationToken cancellationToken = default);
-
-        // Admin operation
-        Task<IEnumerable<Booking>> GetAllAsync(
-            CancellationToken cancellationToken = default);
-
-        Task AddAsync(
-            Booking booking,
-            CancellationToken cancellationToken = default);
-
-        Task UpdateAsync(
-            Booking booking,
-            CancellationToken cancellationToken = default);
-    }
+    Task AddAsync(Booking booking, CancellationToken cancellationToken = default);
+    Task UpdateAsync(Booking booking, CancellationToken cancellationToken = default);
 }

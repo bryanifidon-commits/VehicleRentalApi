@@ -1,4 +1,4 @@
-namespace Application.DTOs.Request;
+namespace Application.DTOs.RequestDtos;
 
 public record CreateVehicleRequest(
     string Make,

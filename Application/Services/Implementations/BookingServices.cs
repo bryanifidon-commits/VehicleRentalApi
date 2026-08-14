@@ -1,6 +1,7 @@
 using Application.DTOs.Request;
 using Application.DTOs.Response;
 using Application.Interfaces;
+using Application.Repositories;
 using Application.Services.Interfaces;
 using Domain.Entities;
 using Domain.Enums;
@@ -24,40 +25,21 @@ public class BookingService : IBookingService
         CreateBookingRequest request,
         CancellationToken cancellationToken = default)
     {
-        if (request.StartDate < DateTime.UtcNow.Date)
-            throw new InvalidOperationException("Start date cannot be in the past.");
+        ValidateBookingDates(request.StartDate, request.EndDate);
 
-        if (request.EndDate <= request.StartDate)
-            throw new InvalidOperationException("End date must be after start date.");
+        // 1. Verify vehicle exists and is active
+        var vehicle = await _vehicleRepository.GetByIdAsync(request.VehicleId, cancellationToken)
+            ?? throw new InvalidOperationException($"Vehicle with ID '{request.VehicleId}' was not found.");
 
-        var vehicle = await _vehicleRepository.GetByIdAsync(
-            request.VehicleId,
-            cancellationToken);
+        if (vehicle.Status != VehicleStatus.Active)
+            throw new InvalidOperationException("This vehicle is currently unavailable for rental.");
 
-        if (vehicle == null)
-            throw new InvalidOperationException(
-                $"Vehicle with ID '{request.VehicleId}' was not found.");
+        // 2. Check for overlapping bookings
+        await EnsureNoBookingOverlapAsync(request.VehicleId, request.StartDate, request.EndDate, cancellationToken: cancellationToken);
 
-        var existingBookings =
-            await _bookingRepository.GetByVehicleIdAsync(
-                request.VehicleId,
-                cancellationToken);
-
-        bool isOverlapping = existingBookings.Any(b =>
-            b.Status != BookingStatus.Cancelled &&
-            request.StartDate < b.EndDate &&
-            request.EndDate > b.StartDate);
-
-        if (isOverlapping)
-            throw new InvalidOperationException(
-                "The vehicle is already booked for the selected dates.");
-
-        int totalDays =
-            (int)Math.Ceiling(
-                (request.EndDate - request.StartDate).TotalDays);
-
-        if (totalDays <= 0)
-            totalDays = 1;
+        // 3. Calculate total days and total price
+        var totalDays = (int)Math.Ceiling((request.EndDate - request.StartDate).TotalDays);
+        if (totalDays <= 0) totalDays = 1;
 
         var booking = new Booking
         {
@@ -71,10 +53,7 @@ public class BookingService : IBookingService
             CreatedAt = DateTime.UtcNow
         };
 
-        await _bookingRepository.AddAsync(
-            booking,
-            cancellationToken);
-
+        await _bookingRepository.AddAsync(booking, cancellationToken);
         return MapToResponse(booking);
     }
 
@@ -82,10 +61,7 @@ public class BookingService : IBookingService
         Guid id,
         CancellationToken cancellationToken = default)
     {
-        var booking = await _bookingRepository.GetByIdAsync(
-            id,
-            cancellationToken);
-
+        var booking = await _bookingRepository.GetByIdAsync(id, cancellationToken);
         return booking == null ? null : MapToResponse(booking);
     }
 
@@ -93,45 +69,107 @@ public class BookingService : IBookingService
         Guid customerId,
         CancellationToken cancellationToken = default)
     {
-        var bookings = await _bookingRepository.GetByCustomerIdAsync(
-            customerId,
-            cancellationToken);
-
+        var bookings = await _bookingRepository.GetByCustomerIdAsync(customerId, cancellationToken);
         return bookings.Select(MapToResponse);
+    }
+
+    public async Task<IEnumerable<BookingResponse>> GetAllBookingsAsync(
+        CancellationToken cancellationToken = default)
+    {
+        var bookings = await _bookingRepository.GetAllAsync(cancellationToken);
+        return bookings.Select(MapToResponse);
+    }
+
+    public async Task<BookingResponse> UpdateBookingDatesAsync(
+        Guid id,
+        UpdateBookingDatesRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        ValidateBookingDates(request.StartDate, request.EndDate);
+
+        var booking = await _bookingRepository.GetByIdAsync(id, cancellationToken)
+            ?? throw new InvalidOperationException($"Booking with ID '{id}' was not found.");
+
+        if (booking.Status == BookingStatus.Cancelled || booking.Status == BookingStatus.Completed)
+            throw new InvalidOperationException("Cannot change dates for a cancelled or completed booking.");
+
+        // Check overlap while ignoring this booking's own ID
+        await EnsureNoBookingOverlapAsync(booking.VehicleId, request.StartDate, request.EndDate, excludeBookingId: id, cancellationToken);
+
+        var vehicle = await _vehicleRepository.GetByIdAsync(booking.VehicleId, cancellationToken)
+            ?? throw new InvalidOperationException("Associated vehicle was not found.");
+
+        var totalDays = (int)Math.Ceiling((request.EndDate - request.StartDate).TotalDays);
+        if (totalDays <= 0) totalDays = 1;
+
+        booking.StartDate = request.StartDate;
+        booking.EndDate = request.EndDate;
+        booking.TotalPrice = totalDays * vehicle.PricePerDay;
+
+        await _bookingRepository.UpdateAsync(booking, cancellationToken);
+        return MapToResponse(booking);
+    }
+
+    public async Task UpdateBookingStatusAsync(
+        Guid id,
+        BookingStatus newStatus,
+        CancellationToken cancellationToken = default)
+    {
+        var booking = await _bookingRepository.GetByIdAsync(id, cancellationToken)
+            ?? throw new InvalidOperationException($"Booking with ID '{id}' was not found.");
+
+        if (booking.Status == BookingStatus.Cancelled)
+            throw new InvalidOperationException("Cannot update status on a cancelled booking.");
+
+        booking.Status = newStatus;
+        await _bookingRepository.UpdateAsync(booking, cancellationToken);
     }
 
     public async Task CancelBookingAsync(
         Guid id,
         CancellationToken cancellationToken = default)
     {
-        var booking = await _bookingRepository.GetByIdAsync(
-            id,
-            cancellationToken);
-
-        if (booking == null)
-            throw new InvalidOperationException(
-                $"Booking with ID '{id}' was not found.");
-
-        if (booking.Status == BookingStatus.Cancelled)
-            throw new InvalidOperationException(
-                "Booking is already cancelled.");
-
-        booking.Status = BookingStatus.Cancelled;
-
-        await _bookingRepository.UpdateAsync(
-            booking,
-            cancellationToken);
+        await UpdateBookingStatusAsync(id, BookingStatus.Cancelled, cancellationToken);
     }
 
-    private static BookingResponse MapToResponse(Booking booking)
+    // --- Private Helper Methods ---
+
+    private static void ValidateBookingDates(DateTime start, DateTime end)
     {
-        return new BookingResponse(
+        if (start < DateTime.UtcNow.Date)
+            throw new InvalidOperationException("Start date cannot be in the past.");
+
+        if (end <= start)
+            throw new InvalidOperationException("End date must be strictly after the start date.");
+    }
+
+    private async Task EnsureNoBookingOverlapAsync(
+        Guid vehicleId,
+        DateTime start,
+        DateTime end,
+        Guid? excludeBookingId = null,
+        CancellationToken cancellationToken = default)
+    {
+        var existingBookings = await _bookingRepository.GetByVehicleIdAsync(vehicleId, cancellationToken);
+
+        bool isOverlapping = existingBookings.Any(b =>
+            b.Id != excludeBookingId &&
+            b.Status != BookingStatus.Cancelled &&
+            start < b.EndDate &&
+            end > b.StartDate);
+
+        if (isOverlapping)
+            throw new InvalidOperationException("The vehicle is already booked for the selected date range.");
+    }
+
+    private static BookingResponse MapToResponse(Booking booking) =>
+        new(
             booking.Id,
             booking.VehicleId,
             booking.CustomerId,
             booking.StartDate,
             booking.EndDate,
             booking.TotalPrice,
-            booking.Status);
-    }
+            booking.Status
+        );
 }

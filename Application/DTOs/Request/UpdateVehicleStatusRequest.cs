@@ -1,6 +1,6 @@
 using Domain.Enums;
 
-namespace Application.DTOs.Request;
+namespace Application.DTOs.RequestDtos;
 
 public record UpdateVehicleStatusRequest(
     VehicleStatus Status
