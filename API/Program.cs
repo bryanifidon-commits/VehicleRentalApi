@@ -1,4 +1,5 @@
 using Application.Interfaces;
+using Application.Services;
 using Application.Services.Implementations;
 using Application.Services.Interfaces;
 using FluentValidation;
@@ -32,20 +33,22 @@ builder.Services.AddCors(options =>
 // FluentValidation
 builder.Services.AddValidatorsFromAssemblyContaining<VehicleServices>();
 
-// Repositories (Changed from AddSingleton to AddScoped to match DbContext lifecycle)
+// Repositories
 builder.Services.AddScoped<IVehicleRepository, VehicleRepository>();
 builder.Services.AddScoped<IBookingRepository, BookingRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IPaymentRepository, PaymentRepository>(); // <-- Added
 
 // Application Services
 builder.Services.AddScoped<IVehicleServices, VehicleServices>();
 builder.Services.AddScoped<IBookingService, BookingService>();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IPaymentService, PaymentService>(); // <-- Added
 
 var app = builder.Build();
 
-// Enable Swagger UI in Development
-if (app.Environment.IsDevelopment())
+// Enable Swagger UI (Enabled for both local and deployed environments)
+if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
