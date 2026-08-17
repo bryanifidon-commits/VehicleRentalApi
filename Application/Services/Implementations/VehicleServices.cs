@@ -3,6 +3,7 @@ using Application.DTOs.Request;
 using Application.DTOs.RequestDtos;
 using Application.DTOs.Response;
 using Application.Interfaces;
+using Application.Request;
 using Application.Services.Interfaces;
 using Domain.Entities;
 using Domain.Enums;
@@ -28,6 +29,27 @@ public class VehicleServices : IVehicleServices
     {
         var vehicles = await _vehicleRepository.GetAvailableAsync(cancellationToken);
         return vehicles.Select(MapToDTO);
+    }
+
+    public async Task<PagedResult<VehicleDTO>> SearchAndFilterVehiclesAsync(
+        VehicleSearchRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var (vehicles, totalCount) = await _vehicleRepository.GetFilteredAsync(request, cancellationToken);
+
+        var dtos = vehicles.Select(MapToDTO);
+
+        int pageNumber = request.PageNumber < 1 ? 1 : request.PageNumber;
+        int pageSize = request.PageSize < 1 ? 10 : request.PageSize;
+        int totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+
+        return new PagedResult<VehicleDTO>(
+            dtos,
+            totalCount,
+            pageNumber,
+            pageSize,
+            totalPages
+        );
     }
 
     public async Task<VehicleDTO?> GetVehicleByIdAsync(Guid id, CancellationToken cancellationToken = default)

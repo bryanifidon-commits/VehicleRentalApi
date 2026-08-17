@@ -1,6 +1,8 @@
+using Application.DTOs;
 using Application.DTOs.Request;
 using Application.DTOs.RequestDtos;
 using Application.DTOs.Response;
+using Application.Request;
 using Application.Services.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -20,15 +22,17 @@ public class VehiclesController : ControllerBase
     }
 
     [HttpGet]
-    [ProducesResponseType(typeof(IEnumerable<VehicleResponse>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetAllVehicles(CancellationToken cancellationToken)
+    [ProducesResponseType(typeof(PagedResult<VehicleDTO>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetVehicles(
+        [FromQuery] VehicleSearchRequest request,
+        CancellationToken cancellationToken)
     {
-        var response = await _vehicleService.GetAllVehiclesAsync(cancellationToken);
+        var response = await _vehicleService.SearchAndFilterVehiclesAsync(request, cancellationToken);
         return Ok(response);
     }
 
     [HttpGet("{id:guid}")]
-    [ProducesResponseType(typeof(VehicleResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(VehicleDTO), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetVehicleById(Guid id, CancellationToken cancellationToken)
     {
@@ -39,9 +43,8 @@ public class VehiclesController : ControllerBase
         return Ok(response);
     }
 
-
     [HttpPost]
-    [ProducesResponseType(typeof(VehicleResponse), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(VehicleDTO), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> CreateVehicle([FromBody] CreateVehicleRequest request, CancellationToken cancellationToken)
     {
@@ -57,7 +60,7 @@ public class VehiclesController : ControllerBase
     }
 
     [HttpPut("{id:guid}")]
-    [ProducesResponseType(typeof(VehicleResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(VehicleDTO), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UpdateVehicle(Guid id, [FromBody] UpdateVehicleRequest request, CancellationToken cancellationToken)

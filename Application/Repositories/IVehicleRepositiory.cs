@@ -1,3 +1,5 @@
+using Application.DTOs.Request;
+using Application.Request;
 using Domain.Entities;
 
 namespace Application.Interfaces;
@@ -6,6 +8,7 @@ public interface IVehicleRepository
 {
     Task<IEnumerable<Vehicle>> GetAllAsync(CancellationToken cancellationToken = default);
     Task<IEnumerable<Vehicle>> GetAvailableAsync(CancellationToken cancellationToken = default);
+    Task<(IEnumerable<Vehicle> Items, int TotalCount)> GetFilteredAsync(VehicleSearchRequest filter, CancellationToken cancellationToken = default);
     Task<Vehicle?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
     Task AddAsync(Vehicle vehicle, CancellationToken cancellationToken = default);
     Task UpdateAsync(Vehicle vehicle, CancellationToken cancellationToken = default);
