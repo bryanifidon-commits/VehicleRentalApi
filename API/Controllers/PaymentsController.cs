@@ -2,10 +2,12 @@
 
 using Application.DTOs;
 using Application.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize] // Requires a valid JWT token for all payment routes
 public class PaymentsController : ControllerBase
 {
     private readonly IPaymentService _paymentService;

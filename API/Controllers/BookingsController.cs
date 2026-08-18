@@ -2,6 +2,7 @@
 using Application.DTOs.Response;
 using Application.Services.Interfaces;
 using FluentValidation;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -10,6 +11,7 @@ namespace API.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Produces("application/json")]
+[Authorize] // Requires a valid JWT token for all endpoints in this controller
 public class BookingsController : ControllerBase
 {
     private readonly IBookingService _bookingService;
@@ -26,6 +28,7 @@ public class BookingsController : ControllerBase
     [HttpPost]
     [ProducesResponseType(typeof(BookingResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> CreateBooking([FromBody] CreateBookingRequest request, CancellationToken cancellationToken)
     {
         var validationResult = await _createBookingValidator.ValidateAsync(request, cancellationToken);
@@ -48,6 +51,7 @@ public class BookingsController : ControllerBase
     [HttpGet("{id:guid}")]
     [ProducesResponseType(typeof(BookingResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetBookingById(Guid id, CancellationToken cancellationToken)
     {
         var booking = await _bookingService.GetBookingByIdAsync(id, cancellationToken);
@@ -59,6 +63,7 @@ public class BookingsController : ControllerBase
 
     [HttpGet("customer/{customerId:guid}")]
     [ProducesResponseType(typeof(IEnumerable<BookingResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetCustomerBookings(Guid customerId, CancellationToken cancellationToken)
     {
         var bookings = await _bookingService.GetCustomerBookingsAsync(customerId, cancellationToken);
@@ -68,6 +73,7 @@ public class BookingsController : ControllerBase
     [HttpPut("{id:guid}/cancel")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> CancelBooking(Guid id, CancellationToken cancellationToken)
     {
         try

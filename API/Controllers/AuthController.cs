@@ -1,6 +1,7 @@
 using Application.DTOs;
 using Application.DTOs.Request;
 using Application.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers;
@@ -16,6 +17,7 @@ public class AuthController : ControllerBase
         _userService = userService;
     }
 
+    // Public: Anyone can create an account
     [HttpPost("register")]
     public async Task<ActionResult<AuthResponse>> Register(
         RegisterUserRequest request,
@@ -39,6 +41,7 @@ public class AuthController : ControllerBase
         }
     }
 
+    // Public: Anyone can log in to receive a JWT token
     [HttpPost("login")]
     public async Task<ActionResult<AuthResponse>> Login(
         LoginRequest request,
@@ -58,6 +61,8 @@ public class AuthController : ControllerBase
         }
     }
 
+    // Protected: Requires a valid JWT token
+    [Authorize]
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<UserResponse>> GetById(
         Guid id,
