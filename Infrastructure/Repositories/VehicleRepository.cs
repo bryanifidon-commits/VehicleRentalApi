@@ -26,6 +26,18 @@ public class VehicleRepository : IVehicleRepository
         // Acceptance Criteria: Return strictly Active vehicles
         query = query.Where(v => v.Status == VehicleStatus.Active);
 
+        // 1. General Keyword Search (Matches across Make, Model, Type, or Location)
+        if (!string.IsNullOrWhiteSpace(filter.SearchTerm))
+        {
+            var term = $"%{filter.SearchTerm.Trim()}%";
+            query = query.Where(v =>
+                EF.Functions.ILike(v.Make, term) ||
+                EF.Functions.ILike(v.Model, term) ||
+                EF.Functions.ILike(v.Type, term) ||
+                EF.Functions.ILike(v.Location, term));
+        }
+
+        // 2. Specific Field Filters
         if (!string.IsNullOrWhiteSpace(filter.Make))
         {
             query = query.Where(v => EF.Functions.ILike(v.Make, $"%{filter.Make.Trim()}%"));

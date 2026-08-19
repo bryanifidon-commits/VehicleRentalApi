@@ -1,6 +1,7 @@
 namespace Application.Request;
 
 public record VehicleSearchRequest(
+    string? SearchTerm = null,
     string? Make = null,
     string? Model = null,
     string? Type = null,
