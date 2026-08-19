@@ -16,7 +16,16 @@ using System.Text;
 // Disables legacy claim mapping for JwtSecurityTokenHandler
 JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
 
-var builder = WebApplication.CreateBuilder(args);
+// Custom WebApplicationOptions to disable file watching (reloadOnChange: false)
+// Prevents status 139 / inotify crashes on Linux container hosting (Render)
+var builderOptions = new WebApplicationOptions { Args = args };
+var builder = WebApplication.CreateBuilder(builderOptions);
+
+builder.Configuration.Sources.Clear();
+builder.Configuration
+    .AddJsonFile("appsettings.json", optional: true, reloadOnChange: false)
+    .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: false)
+    .AddEnvironmentVariables();
 
 // Database Context (PostgreSQL)
 builder.Services.AddDbContext<VehicleRentalDbContext>(options =>
@@ -166,9 +175,11 @@ if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
 }
 
 app.UseCors("AllowAll");
-//app.UseHttpsRedirection();
+// app.UseHttpsRedirection();
+
 app.UseAuthentication();
 app.UseAuthorization();
+
 app.MapControllers();
 
 app.Run();
