@@ -61,6 +61,19 @@ public class AuthController : ControllerBase
         }
     }
 
+    // Admin Only: Get all registered users
+    [Authorize(Roles = "Admin")]
+    [HttpGet("users")]
+    [ProducesResponseType(typeof(IEnumerable<UserResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<IEnumerable<UserResponse>>> GetAllUsers(
+        CancellationToken cancellationToken)
+    {
+        var users = await _userService.GetAllUsersAsync(cancellationToken);
+        return Ok(users);
+    }
+
     // Protected: Requires a valid JWT token
     [Authorize]
     [HttpGet("{id:guid}")]

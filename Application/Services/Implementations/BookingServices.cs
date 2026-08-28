@@ -72,6 +72,7 @@ public class BookingService : IBookingService
         return bookings.Select(MapToResponse);
     }
 
+    // Fetches all system bookings for Admin view
     public async Task<IEnumerable<BookingResponse>> GetAllBookingsAsync(
         CancellationToken cancellationToken = default)
     {

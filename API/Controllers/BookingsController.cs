@@ -25,6 +25,18 @@ public class BookingsController : ControllerBase
         _createBookingValidator = createBookingValidator;
     }
 
+    // Admin Only: Get all bookings across the system
+    [HttpGet]
+    [Authorize(Roles = "Admin")]
+    [ProducesResponseType(typeof(IEnumerable<BookingResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> GetAllBookings(CancellationToken cancellationToken)
+    {
+        var bookings = await _bookingService.GetAllBookingsAsync(cancellationToken);
+        return Ok(bookings);
+    }
+
     [HttpPost]
     [ProducesResponseType(typeof(BookingResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]

@@ -99,10 +99,22 @@ public class UserService : IUserService
         if (user == null)
             return null;
 
+        return MapToUserResponse(user);
+    }
+
+    public async Task<IEnumerable<UserResponse>> GetAllUsersAsync(
+        CancellationToken cancellationToken = default)
+    {
+        var users = await _userRepository.GetAllAsync(cancellationToken);
+        return users.Select(MapToUserResponse);
+    }
+
+    private static UserResponse MapToUserResponse(User user)
+    {
         return new UserResponse(
             user.Id,
             user.Name,
-            string.Empty,
+            user.Phone ?? string.Empty,
             user.Email,
             user.Role.ToString());
     }
@@ -124,10 +136,10 @@ public class UserService : IUserService
 
         var claims = new[]
         {
-        new Claim("nameid", user.Id.ToString()),
-        new Claim(JwtRegisteredClaimNames.Email, user.Email),
-        new Claim("role", user.Role.ToString()) // Single clean role claim
-    };
+            new Claim("nameid", user.Id.ToString()),
+            new Claim(JwtRegisteredClaimNames.Email, user.Email),
+            new Claim("role", user.Role.ToString())
+        };
 
         var tokenDescriptor = new SecurityTokenDescriptor
         {

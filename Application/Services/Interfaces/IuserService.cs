@@ -16,4 +16,7 @@ public interface IUserService
     Task<UserResponse?> GetByIdAsync(
         Guid id,
         CancellationToken cancellationToken = default);
+
+    Task<IEnumerable<UserResponse>> GetAllUsersAsync(
+        CancellationToken cancellationToken = default);
 }
