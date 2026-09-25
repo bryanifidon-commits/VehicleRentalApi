@@ -6,7 +6,10 @@ public record VehicleSearchRequest(
     string? Model = null,
     string? Type = null,
     string? Location = null,
+    decimal? MinPricePerDay = null,
     decimal? MaxPricePerDay = null,
+    DateTime? StartDate = null,
+    DateTime? EndDate = null,
     int PageNumber = 1,
     int PageSize = 10
 );

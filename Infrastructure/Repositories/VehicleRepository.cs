@@ -58,9 +58,27 @@ public class VehicleRepository : IVehicleRepository
             query = query.Where(v => EF.Functions.ILike(v.Location, $"%{filter.Location.Trim()}%"));
         }
 
+        // 3. Price Range Filtering
+        if (filter.MinPricePerDay.HasValue)
+        {
+            query = query.Where(v => v.PricePerDay >= filter.MinPricePerDay.Value);
+        }
+
         if (filter.MaxPricePerDay.HasValue)
         {
             query = query.Where(v => v.PricePerDay <= filter.MaxPricePerDay.Value);
+        }
+
+        // 4. Availability Filtering (Excludes vehicles with overlapping active/confirmed bookings)
+        if (filter.StartDate.HasValue && filter.EndDate.HasValue)
+        {
+            var start = filter.StartDate.Value;
+            var end = filter.EndDate.Value;
+
+            query = query.Where(v => !v.Bookings.Any(b =>
+                b.Status != BookingStatus.Cancelled &&
+                b.StartDate < end &&
+                b.EndDate > start));
         }
 
         int totalCount = await query.CountAsync(cancellationToken);
