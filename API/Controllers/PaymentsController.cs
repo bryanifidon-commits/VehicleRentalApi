@@ -35,16 +35,23 @@ public class PaymentsController : ControllerBase
         }
     }
 
+    // Support both /api/payments/verify/{reference} AND /api/payments/reference/{reference}
     [HttpGet("verify/{reference}")]
+    [HttpGet("reference/{reference}")]
     public async Task<ActionResult<VerifyPaymentResponse>> VerifyPayment(
         string reference,
         CancellationToken cancellationToken)
     {
         var result = await _paymentService.VerifyPaymentAsync(reference, cancellationToken);
 
-        if (!result.Success && result.Status == "NotFound")
+        if (!result.Success)
         {
-            return NotFound(result);
+            if (result.Status == "NotFound" || result.Message.Contains("not found", StringComparison.OrdinalIgnoreCase))
+            {
+                return NotFound(result);
+            }
+
+            return BadRequest(result);
         }
 
         return Ok(result);
