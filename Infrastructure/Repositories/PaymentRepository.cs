@@ -34,6 +34,16 @@ public class PaymentRepository : IPaymentRepository
                 cancellationToken);
     }
 
+    public async Task<Payment?> GetByTransactionRefAsync(
+        string transactionRef,
+        CancellationToken cancellationToken = default)
+    {
+        return await _context.Payments
+            .FirstOrDefaultAsync(
+                p => p.TransactionRef == transactionRef,
+                cancellationToken);
+    }
+
     public async Task<IEnumerable<Payment>> GetAllAsync(
         CancellationToken cancellationToken = default)
     {

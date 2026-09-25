@@ -5,6 +5,7 @@ using Application.Services.Interfaces;
 using FluentValidation;
 using Infrastructure.Data;
 using Infrastructure.Repositories;
+using Infrastructure.Services; // 1. Added namespace for PaystackService
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -165,6 +166,9 @@ builder.Services.AddScoped<IBookingService, BookingService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
 
+// External Services (Paystack HTTP Client Integration)
+builder.Services.AddHttpClient<IPaystackService, PaystackService>(); // 2. Typed HttpClient Registration
+
 var app = builder.Build();
 
 // Enable Swagger UI
@@ -176,10 +180,8 @@ if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
 
 app.UseCors("AllowAll");
 // app.UseHttpsRedirection();
-
 app.UseAuthentication();
 app.UseAuthorization();
-
 app.MapControllers();
 
 app.Run();

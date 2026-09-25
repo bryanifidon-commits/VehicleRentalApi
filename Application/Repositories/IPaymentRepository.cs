@@ -16,6 +16,11 @@ public interface IPaymentRepository
         Guid bookingId,
         CancellationToken cancellationToken = default);
 
+    // Added for Paystack transaction verification lookup
+    Task<Payment?> GetByTransactionRefAsync(
+        string transactionRef,
+        CancellationToken cancellationToken = default);
+
     Task<IEnumerable<Payment>> GetAllAsync(
         CancellationToken cancellationToken = default);
 

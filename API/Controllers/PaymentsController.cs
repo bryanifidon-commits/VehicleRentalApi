@@ -1,13 +1,11 @@
-﻿namespace API.Controllers;
-
-using Application.DTOs;
-using Application.Interfaces;
-using Microsoft.AspNetCore.Authorization;
+﻿using Application.DTOs;
+using Application.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+
+namespace WebApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize] // Requires a valid JWT token for all payment routes
 public class PaymentsController : ControllerBase
 {
     private readonly IPaymentService _paymentService;
@@ -17,28 +15,62 @@ public class PaymentsController : ControllerBase
         _paymentService = paymentService;
     }
 
-    [HttpPost]
-    public async Task<IActionResult> ProcessPayment([FromBody] CreatePaymentRequest request, CancellationToken cancellationToken)
+    [HttpPost("initialize/{bookingId:guid}")]
+    public async Task<ActionResult<InitializePaymentResponse>> InitializePayment(
+        Guid bookingId,
+        CancellationToken cancellationToken)
     {
-        var response = await _paymentService.ProcessPaymentAsync(request, cancellationToken);
-        return CreatedAtAction(nameof(GetPaymentById), new { id = response.Id }, response);
+        try
+        {
+            var result = await _paymentService.InitializePaymentAsync(bookingId, cancellationToken);
+            return Ok(result);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpGet("verify/{reference}")]
+    public async Task<ActionResult<VerifyPaymentResponse>> VerifyPayment(
+        string reference,
+        CancellationToken cancellationToken)
+    {
+        var result = await _paymentService.VerifyPaymentAsync(reference, cancellationToken);
+
+        if (!result.Success && result.Status == "NotFound")
+        {
+            return NotFound(result);
+        }
+
+        return Ok(result);
     }
 
     [HttpGet("{id:guid}")]
-    public async Task<IActionResult> GetPaymentById(Guid id, CancellationToken cancellationToken)
+    public async Task<ActionResult<PaymentResponse>> GetById(
+        Guid id,
+        CancellationToken cancellationToken)
     {
-        var response = await _paymentService.GetPaymentByIdAsync(id, cancellationToken);
-        if (response == null) return NotFound();
+        var payment = await _paymentService.GetPaymentByIdAsync(id, cancellationToken);
+        if (payment == null)
+            return NotFound();
 
-        return Ok(response);
+        return Ok(payment);
     }
 
     [HttpGet("booking/{bookingId:guid}")]
-    public async Task<IActionResult> GetPaymentByBookingId(Guid bookingId, CancellationToken cancellationToken)
+    public async Task<ActionResult<PaymentResponse>> GetByBookingId(
+        Guid bookingId,
+        CancellationToken cancellationToken)
     {
-        var response = await _paymentService.GetPaymentByBookingIdAsync(bookingId, cancellationToken);
-        if (response == null) return NotFound();
+        var payment = await _paymentService.GetPaymentByBookingIdAsync(bookingId, cancellationToken);
+        if (payment == null)
+            return NotFound();
 
-        return Ok(response);
+        return Ok(payment);
     }
 }
